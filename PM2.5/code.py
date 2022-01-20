@@ -32,7 +32,7 @@ def train(x_train, y_train, epoch):
     bias = 0  # 这是最初始的偏差值
     weights = np.ones(9)  # 初始化权重，前九个的权重是相同的
     learning_rate = 1  # 初始化学习率
-    reg_rate = 0.001  # 正则化系数
+    reg_rate = 1  # 正则化系数
     bg2_sum = 0  # 用来存放偏差值的梯度平方和
     wg2_sum = np.zeros(9)  # 用来存放权重的梯度平方和
 
@@ -90,6 +90,7 @@ def main():
     # 在验证集上面看效果怎么样
     loss = validate(x_test, y_test, w, b)
     print('the loss on val data is:', loss)
+    print(w, b)
 
 
 if __name__ == '__main__':
