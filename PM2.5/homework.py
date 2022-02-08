@@ -24,7 +24,7 @@ for month in range(12):
             if day == 19 and hour > 14:
                 continue
             # 完成了采样的工作
-            x[month * 471 + day * 24 + hour, :] = month_data[month][:,day*24+hour:day*24+hour+9].reshape(1, -1)
+            x[month * 471 + day * 24 + hour, :] = month_data[month][:, day*24+hour:day*24+hour+9].reshape(1, -1)
             y[month * 471 + day * 24 + hour, 0] = month_data[month][9, day*24+hour+9]
 
 # 标准化
