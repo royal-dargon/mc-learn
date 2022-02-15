@@ -44,7 +44,7 @@ def get_set(month_list):
                 x[i][j] = (x[i][j] - x_mean[j]) / x_std[j]
     x_train = x[:math.floor(len(x) * 0.8), :]
     y_train = y[:math.floor(len(y) * 0.8), 0]
-    # print(y_train)
+    print(y_train)
     return x_train, y_train
 
 

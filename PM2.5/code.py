@@ -58,7 +58,7 @@ def train(x_train, y_train, epoch):
         weights -= learning_rate/wg2_sum**0.5 * w_g
 
         # 每次训练200轮就输出一次结果
-        if i%200 == 0:
+        if i % 200 == 0:
             loss = 0
             for j in range(3200):
                 loss += (y_train[j] - weights.dot(x_train[j, 9, :]) - bias)**2
