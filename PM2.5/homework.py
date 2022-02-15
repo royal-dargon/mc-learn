@@ -69,6 +69,6 @@ for t in range(iter_time):
     a_sum += (adagrad * adagrad)
     # print(adagrad.shape)
     # 梯度下降
-    w = w - (learning_rate * g) / np.sqrt(a_sum)
+    w = w - (learning_rate * g) / (np.sqrt(a_sum) + eps)
     # print(w)
-np.save('weights.npy', w)
+np.savetxt('weights.txt', w)
