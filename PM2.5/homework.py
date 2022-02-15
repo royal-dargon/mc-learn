@@ -48,24 +48,27 @@ w = np.zeros([dim, 1])
 x_train_set = np.concatenate((np.ones([len(x_train_set), 1]), x_train_set), axis=1).astype(float)
 
 # 学习率与循环次数
-learning_rate = 0.01
+learning_rate = 100
 iter_time = 3000
 
 # print(len(x_train_set))
 adagrad = np.zeros([dim, 1])
 eps = 0.0001
+a_sum = np.zeros([dim, 1])
 for t in range(iter_time):
     loss = np.sqrt(sum(np.power(np.dot(x_train_set, w) - y_train_set, 2))/len(x_train_set))
     if(t % 100 == 0):
-        print("迭代次数：%i 损失之: %f" %(t, loss))
+        print("迭代次数：%i 损失: %f" %(t, loss))
     temp = np.dot(x_train_set, w)
-    #print(y_train_set.T.shape)
-    #adagrad = np.dot(np.dot(w.T, x_train_set.T), np.dot(x_train_set, w) - y_train_set)/(loss * len(x_train_set))
-    adagrad = sum(np.dot(np.dot(x_train_set.T, x_train_set), w) - np.dot(x_train_set.T, y_train_set))/len(x_train_set)
+    # print(y_train_set.T.shape)
+    # adagrad = np.dot(np.dot(w.T, x_train_set.T), np.dot(x_train_set, w) - y_train_set)/(loss * len(x_train_set))
+    adagrad = np.dot(np.dot(x_train_set.T, x_train_set), w) - np.dot(x_train_set.T, y_train_set)/len(x_train_set)
 
-    print(adagrad)
+    # print(adagrad.shape)
     g = adagrad
-    adagrad += (adagrad ** 2)
+    a_sum += (adagrad * adagrad)
+    # print(adagrad.shape)
     # 梯度下降
-    w = w - (learning_rate * g) / np.sqrt(adagrad + eps)
+    w = w - (learning_rate * g) / np.sqrt(a_sum)
+    # print(w)
 np.save('weights.npy', w)
