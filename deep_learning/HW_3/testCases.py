@@ -5,7 +5,7 @@
 import numpy as np
 
 def layer_sizes_test_case():
-    np.random.seed(1)
+    # np.random.seed(1)
     X_assess = np.random.randn(5, 3)
     Y_assess = np.random.randn(2, 3)
     return X_assess, Y_assess
@@ -15,7 +15,7 @@ def initialize_parameters_test_case():
     return n_x, n_h, n_y
 
 def forward_propagation_test_case():
-    np.random.seed(1)
+    # np.random.seed(1)
     X_assess = np.random.randn(2, 3)
 
     parameters = {'W1': np.array([[-0.00416758, -0.00056267],
@@ -32,7 +32,7 @@ def forward_propagation_test_case():
     return X_assess, parameters
 
 def compute_cost_test_case():
-    np.random.seed(1)
+    # np.random.seed(1)
     Y_assess = np.random.randn(1, 3)
     parameters = {'W1': np.array([[-0.00416758, -0.00056267],
         [-0.02136196,  0.01640271],
@@ -50,7 +50,7 @@ def compute_cost_test_case():
     return a2, Y_assess, parameters
 
 def backward_propagation_test_case():
-    np.random.seed(1)
+    # np.random.seed(1)
     X_assess = np.random.randn(2, 3)
     Y_assess = np.random.randn(1, 3)
     parameters = {'W1': np.array([[-0.00416758, -0.00056267],
