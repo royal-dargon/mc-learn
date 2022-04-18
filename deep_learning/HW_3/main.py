@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from testCases import *
-import sklearn
-import sklearn.datasets
+# import sklearn
+# import sklearn.datasets
 import sklearn.linear_model
 from planar_utils import plot_decision_boundary, sigmoid, load_planar_dataset, load_extra_datasets
 
@@ -13,7 +13,7 @@ from planar_utils import plot_decision_boundary, sigmoid, load_planar_dataset, l
 X, Y = load_planar_dataset()
 # 把数据集加载完毕了，可以使用plt对数据进行展示 其实c表示的是颜色的意思 s表示的是点的大小
 plt.scatter(X[0,:], X[1,:], c=np.squeeze(Y), s=40, cmap=plt.cm.Spectral)
-# plt.show()
+plt.show()
 
 shape_X = X.shape
 shape_Y = Y.shape
@@ -196,6 +196,7 @@ def update_parameters(parameters, grads, learning_rate=1.2):
     返回：
      parameters - 包含更新参数的字典类型的变量。
     """
+	
 	W1, W2 = parameters["W1"], parameters["W2"]
 	b1, b2 = parameters["b1"], parameters["b2"]
 
