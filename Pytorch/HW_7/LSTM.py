@@ -1,4 +1,3 @@
-# 这是第七次实验，在这次实验中我们希望去实现的目标是姓名的生成
 from __future__ import unicode_literals, print_function, division
 from io import open
 import glob
@@ -8,7 +7,7 @@ import string
 import torch
 import torch.nn as nn
 import random
-# import LSTM as L
+
 
 all_letters = string.ascii_letters + " .,;'-"
 n_letters = len(all_letters) + 1  # Plus EOS marker
@@ -48,33 +47,55 @@ if n_categories == 0:
         'from https://download.pytorch.org/tutorial/data.zip and extract it to '
         'the current directory.')
 
-print('# categories:', n_categories, all_categories)
-print(unicodeToAscii("O'Néàl"))
 
-
-class RNN(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super(RNN, self).__init__()
+class LstmRNN(nn.Module):
+    """
+            Parameters：
+            - input_size: feature Ssize
+            - hidden_size: number of hidden units
+            - output_size: number of output
+            - num_layers: layers of LSTM to stack
+    """
+    def __init__(self, input_size, hidden_size=1, output_size=1, batch_size=1, sequence_size=1, num_layers=1):
+        super().__init__()
+        self.input_size = input_size
         self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.output_size = output_size
+        self.batch_size = batch_size
+        self.cell = nn.LSTM(input_size, hidden_size, num_layers)  # 这里是使用pytorch已有的框架
+        self.linear = nn.Linear(hidden_size * sequence_size, output_size)  # 这里写出来的是输入的层数和输出的层数
 
-        self.i2h = nn.Linear(n_categories + input_size + hidden_size, hidden_size)
-        self.i2o = nn.Linear(n_categories + input_size + hidden_size, output_size)
-        self.o2o = nn.Linear(hidden_size + output_size, output_size)
-        self.dropout = nn.Dropout(0.1)
-        self.softmax = nn.LogSoftmax(dim=1)
+    def forward(self, input_x):
+        # x, _ = self.lstm(_x)  # _x是输入，大小是（序列长度，批次数，输入的数量）
+        s, batch, features = input_x.size()
+        # x = x.view(s*b, h)
+        hidden = self.init_zeros(batch)
+        cell = self.cell(batch)
+        output, _ = self.cell(input_x, (hidden, cell))
+        hidden = convert_hidden_shape(output, batch)
+        output = self.linear(hidden)
+        return output
 
-    def forward(self, category, input, hidden):
-        input_combined = torch.cat((category, input, hidden), 1)
-        hidden = self.i2h(input_combined)
-        output = self.i2o(input_combined)
-        output_combined = torch.cat((hidden, output), 1)
-        output = self.o2o(output_combined)
-        output = self.dropout(output)
-        output = self.softmax(output)
-        return output, hidden
+    def init_zeros(self, batch_size=0, hidden_size=0):
+        if batch_size == 0:
+            batch_size = self.batch_size
 
-    def initHidden(self):
-        return torch.zeros(1, self.hidden_size)
+        if hidden_size == 0:
+            hidden_size = self.hidden_size
+
+        return torch.zeros(self.num_layers, batch_size, hidden_size)
+
+
+def convert_hidden_shape(hidden, batch_size):
+    tensor_list = []
+
+    for i in range(batch_size):
+        ts = hidden[:, i, :].reshape(1, -1)
+        tensor_list.append(ts)
+
+    ts = nn.cat(tensor_list)
+    return ts
 
 
 # Random item from a list
@@ -126,14 +147,14 @@ learning_rate = 0.0005
 
 def train(category_tensor, input_line_tensor, target_line_tensor):
     target_line_tensor.unsqueeze_(-1)
-    hidden = rnn.initHidden()
+    hidden = lstm.init_zeros()
 
-    rnn.zero_grad()
+    lstm.zero_grad()
 
     loss = 0
 
     for i in range(input_line_tensor.size(0)):
-        output, hidden = rnn(category_tensor, input_line_tensor[i], hidden)
+        output, hidden = lstm(category_tensor, input_line_tensor[i], hidden)
         l = criterion(output, target_line_tensor[i])
         loss += l
 
@@ -157,8 +178,7 @@ def timeSince(since):
     return '%dm %ds' % (m, s)
 
 
-rnn = RNN(n_letters, 128, n_letters)
-# lstm = L()
+lstm = LstmRNN(input_size=n_letters, hidden_size=128, output_size=n_letters)
 
 n_iters = 100000
 print_every = 5000
@@ -211,17 +231,8 @@ def sample(category, start_letter='A'):
 
         return output_name
 
+
 # Get multiple samples from one category and multiple starting letters
 def samples(category, start_letters='ABC'):
     for start_letter in start_letters:
         print(sample(category, start_letter))
-
-
-# samples('Russian', 'RUS')
-
-# samples('German', 'GER')
-
-# samples('Spanish', 'SPA')
-
-# samples('Chinese', 'CHI')
-samples('Chinese', 'Lee')
