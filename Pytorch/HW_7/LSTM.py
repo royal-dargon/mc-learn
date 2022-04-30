@@ -1,3 +1,4 @@
+# 这是第七次实验，在这次实验中我们希望去实现的目标是姓名的生成
 from __future__ import unicode_literals, print_function, division
 from io import open
 import glob
@@ -7,7 +8,7 @@ import string
 import torch
 import torch.nn as nn
 import random
-
+# import LSTM as L
 
 all_letters = string.ascii_letters + " .,;'-"
 n_letters = len(all_letters) + 1  # Plus EOS marker
@@ -47,55 +48,47 @@ if n_categories == 0:
         'from https://download.pytorch.org/tutorial/data.zip and extract it to '
         'the current directory.')
 
+# print('# categories:', n_categories, all_categories)
+# print(unicodeToAscii("O'Néàl"))
+# print(n_categories)
 
-class LstmRNN(nn.Module):
-    """
-            Parameters：
-            - input_size: feature Ssize
-            - hidden_size: number of hidden units
-            - output_size: number of output
-            - num_layers: layers of LSTM to stack
-    """
-    def __init__(self, input_size, hidden_size=1, output_size=1, batch_size=1, sequence_size=1, num_layers=1):
-        super().__init__()
-        self.input_size = input_size
+
+class RNN(nn.Module):
+    # 输入的值的含义第一个是输入的大小59，第二个是隐藏层的大小，第三个是输出的大小
+    def __init__(self, input_size, hidden_size, output_size):
+        super(RNN, self).__init__()
         self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.output_size = output_size
-        self.batch_size = batch_size
-        self.cell = nn.LSTM(input_size, hidden_size, num_layers)  # 这里是使用pytorch已有的框架
-        self.linear = nn.Linear(hidden_size * sequence_size, output_size)  # 这里写出来的是输入的层数和输出的层数
+        # 18个种类变成8
+        self.c2c = nn.Linear(n_categories, 8)
+        self.x2c = nn.Linear(input_size, 32)
+        # self.i2h = nn.Linear(n_categories + input_size + hidden_size, hidden_size)
+        # self.i2o = nn.Linear(n_categories + input_size + hidden_size, output_size)
+        # self.i2c = nn.Linear(n_categories + input_size + hidden_size, n_categories)
+        self.lstm = nn.LSTM(8 + 32, hidden_size, 1)
+        self.o2o = nn.Linear(hidden_size, output_size)
+        # self.lstm = nn.LSTM()
+        self.dropout = nn.Dropout(0.1)
+        self.softmax = nn.LogSoftmax(dim=2)
 
-    def forward(self, input_x):
-        # x, _ = self.lstm(_x)  # _x是输入，大小是（序列长度，批次数，输入的数量）
-        s, batch, features = input_x.size()
-        # x = x.view(s*b, h)
-        hidden = self.init_zeros(batch)
-        cell = self.cell(batch)
-        output, _ = self.cell(input_x, (hidden, cell))
-        hidden = convert_hidden_shape(output, batch)
-        output = self.linear(hidden)
-        return output
+    def forward(self, category, input, hidden, context):
+        # input_combined = torch.cat((category, input, hidden), 1)
+        category = self.c2c(category)
+        input = self.x2c(input)
+        input_combined = torch.cat((category, input), 2)
+        # hidden = self.i2h(input_combined)
+        # output = self.i2o(input_combined)
+        # output_combined = torch.cat((hidden, output), 1)
+        output, (hn, cn) = self.lstm(input_combined, (hidden, context))
+        output = self.o2o(output)
+        output = self.dropout(output)
+        output = self.softmax(output)
+        return output, hn, cn
 
-    def init_zeros(self, batch_size=0, hidden_size=0):
-        if batch_size == 0:
-            batch_size = self.batch_size
+    def initHidden(self):
+        return torch.zeros(1, 1, self.hidden_size)
 
-        if hidden_size == 0:
-            hidden_size = self.hidden_size
-
-        return torch.zeros(self.num_layers, batch_size, hidden_size)
-
-
-def convert_hidden_shape(hidden, batch_size):
-    tensor_list = []
-
-    for i in range(batch_size):
-        ts = hidden[:, i, :].reshape(1, -1)
-        tensor_list.append(ts)
-
-    ts = nn.cat(tensor_list)
-    return ts
+    def initcn(self):
+        return torch.zeros(1, 1, self.hidden_size)
 
 
 # Random item from a list
@@ -147,15 +140,20 @@ learning_rate = 0.0005
 
 def train(category_tensor, input_line_tensor, target_line_tensor):
     target_line_tensor.unsqueeze_(-1)
-    hidden = lstm.init_zeros()
+    hidden = rnn.initHidden()
+    cn = rnn.initcn()
 
-    lstm.zero_grad()
+    rnn.zero_grad()
 
     loss = 0
 
     for i in range(input_line_tensor.size(0)):
-        output, hidden = lstm(category_tensor, input_line_tensor[i], hidden)
-        l = criterion(output, target_line_tensor[i])
+        input = input_line_tensor[i].view(1, 1, -1)
+        target = target_line_tensor[i].view(-1)
+        category_tensor = category_tensor.view(1, 1, -1)
+        output, hidden, cn = rnn(category_tensor, input, hidden, cn)
+        output = output.view(1, -1)
+        l = criterion(output, target)
         loss += l
 
     loss.backward()
@@ -178,7 +176,8 @@ def timeSince(since):
     return '%dm %ds' % (m, s)
 
 
-lstm = LstmRNN(input_size=n_letters, hidden_size=128, output_size=n_letters)
+rnn = RNN(n_letters, 128, n_letters)
+# lstm = L()
 
 n_iters = 100000
 print_every = 5000
@@ -215,11 +214,14 @@ def sample(category, start_letter='A'):
         category_tensor = categoryTensor(category)
         input = inputTensor(start_letter)
         hidden = rnn.initHidden()
+        cn = rnn.initcn()
 
         output_name = start_letter
-
+        # 细节上面的统一
+        category_tensor = category_tensor.view(1, 1, -1)
         for i in range(max_length):
-            output, hidden = rnn(category_tensor, input[0], hidden)
+            input = input[0].view(1, 1, -1)
+            output, hidden, cn = rnn(category_tensor, input, hidden, cn)
             topv, topi = output.topk(1)
             topi = topi[0][0]
             if topi == n_letters - 1:
@@ -231,8 +233,17 @@ def sample(category, start_letter='A'):
 
         return output_name
 
-
 # Get multiple samples from one category and multiple starting letters
 def samples(category, start_letters='ABC'):
     for start_letter in start_letters:
         print(sample(category, start_letter))
+
+
+# samples('Russian', 'RUS')
+
+# samples('German', 'GER')
+
+# samples('Spanish', 'SPA')
+
+# samples('Chinese', 'CHI')
+samples('Chinese', 'LLL')

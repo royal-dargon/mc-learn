@@ -224,4 +224,4 @@ def samples(category, start_letters='ABC'):
 # samples('Spanish', 'SPA')
 
 # samples('Chinese', 'CHI')
-samples('Chinese', 'Lee')
+samples('Chinese', 'L')
