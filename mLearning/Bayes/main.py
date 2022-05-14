@@ -2,7 +2,9 @@ import jieba
 import pandas as pd
 import numpy as np
 import sklearn.preprocessing as sp
-from sklearn.naive_bayes import GaussianNB, MultinomialNB
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
+import joblib
+
 
 
 # 读取停词表中的信息
@@ -52,11 +54,11 @@ def text_features(x_train, x_test, feature_word):
 
 
 def text_classifer(train_feature_list, test_feature_list, train_class_list, test_class_list):
-    classifier1 = MultinomialNB().fit(train_feature_list, train_class_list)
+    classifier1 = BernoulliNB().fit(train_feature_list, train_class_list)
     print(classifier1.predict(test_feature_list))
     print(test_class_list)
     test_accuracy = classifier1.score(test_feature_list, test_class_list)
-    return test_accuracy
+    return test_accuracy, classifier1
 
 
 # 解决不对齐的问题
@@ -111,5 +113,10 @@ if __name__ == "__main__":
     # print(train_features)
     y_train = np.array(y_train).astype(int)
     y_test = np.array(y_test).astype(int)
-    test_accuracy = text_classifer(train_features, test_features, y_train, y_test)
+    test_accuracy, clf = text_classifer(train_features, test_features, y_train, y_test)
     print(test_accuracy)
+
+    # save model
+    joblib.dump(clf, 'rfc.pkl')
+    # load model
+    rfc2 = joblib.load('rfc.pkl')
