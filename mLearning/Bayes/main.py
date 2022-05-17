@@ -4,6 +4,7 @@ import numpy as np
 import sklearn.preprocessing as sp
 from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
 import joblib
+from sklearn.decomposition import PCA
 
 
 
@@ -48,17 +49,21 @@ def text_features(x_train, x_test, feature_word):
         text_words = set(text)
         feature = [1 if word in feature else 0 for word in text_words]
         return feature
-    train_features = [actions(text, feature_word) for text in x_train]
-    test_features = [actions(text, feature_word) for text in x_test]
+    train_features = [actions(feature_word, text) for text in x_train]
+    test_features = [actions(feature_word, text) for text in x_test]
     return train_features, test_features
 
 
 def text_classifer(train_feature_list, test_feature_list, train_class_list, test_class_list):
-    classifier1 = BernoulliNB().fit(train_feature_list, train_class_list)
-    print(classifier1.predict(test_feature_list))
-    print(test_class_list)
-    test_accuracy = classifier1.score(test_feature_list, test_class_list)
-    return test_accuracy, classifier1
+    classfier1 = MultinomialNB()
+    # pca = PCA(n_components=4)
+    # pca.fit(train_feature_list)
+    classfier1 = classfier1.fit(train_feature_list, train_class_list)
+    # print(test_feature_list)
+    # print(classfier1.predict(test_feature_list))
+    # print(test_class_list)
+    test_accuracy = classfier1.score(test_feature_list, test_class_list)
+    return test_accuracy, classfier1
 
 
 # 解决不对齐的问题
@@ -88,10 +93,11 @@ def solve_zero(text_features, test_features):
 if __name__ == "__main__":
     data = pd.read_csv('result1.csv', encoding='utf-8')
     df = np.array(data)
-    X = df[:1000, 4]
-    Y = df[:1000, 0]
+    X = df[:, 4]
+    Y = df[:, 0]
     lbe = sp.LabelEncoder()
     y_lable = lbe.fit_transform(Y)
+    # print(set(y_lable))
     temp = np.array([X, y_lable])
     temp = temp.transpose()
     # print(temp[1])
@@ -103,6 +109,7 @@ if __name__ == "__main__":
     # 这里是开始进行分词的处理
     x_train = data_process(x_train)
     x_test = data_process(x_test)
+    print(x_train[:5])
     # 获取停词表中的信息
     stop_words = get_stop_list("stopwords.txt")
     feature_dict = word_dict(x_train, stop_words)
@@ -115,8 +122,11 @@ if __name__ == "__main__":
     y_test = np.array(y_test).astype(int)
     test_accuracy, clf = text_classifer(train_features, test_features, y_train, y_test)
     print(test_accuracy)
+    # for i in range(1000):
+    #     print(test_features[2][i])
 
     # save model
     joblib.dump(clf, 'rfc.pkl')
-    # load model
+    # load model3
     rfc2 = joblib.load('rfc.pkl')
+
