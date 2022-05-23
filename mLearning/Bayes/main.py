@@ -51,11 +51,15 @@ def text_features(x_train, x_test, feature_word):
         return feature
     train_features = [actions(feature_word, text) for text in x_train]
     test_features = [actions(feature_word, text) for text in x_test]
+    pca = PCA(n_components=2)
+    train_features = pca.fit_transform(train_features)
+    test_features = pca.transform(test_features)
+    print(test_features)
     return train_features, test_features
 
 
 def text_classifer(train_feature_list, test_feature_list, train_class_list, test_class_list):
-    classfier1 = MultinomialNB()
+    classfier1 = GaussianNB()
     # pca = PCA(n_components=4)
     # pca.fit(train_feature_list)
     classfier1 = classfier1.fit(train_feature_list, train_class_list)
